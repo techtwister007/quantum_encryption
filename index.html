@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encryption/Decryption UI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            display: inline-block;
+            margin-right: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Encryption/Decryption UI</h1>
+    <textarea id="message" placeholder="Type your message here..."></textarea>
+    <button onclick="encodeMessage()">Encode</button>
+    <button onclick="decodeMessage()">Decode</button>
+    <button id="saveBtn" onclick="saveData()" style="display:none;">Save to Database</button>
+    <textarea id="result" placeholder="Result will appear here..."></textarea>
+    <h2>Saved Data</h2>
+    <ul id="dataList"></ul>
+
+    <script>
+        async function encodeMessage() {
+            const message = document.getElementById("message").value;
+            const response = await fetch("http://localhost:5056/process/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ message: message, mode: "encode" }),
+            });
+            const result = await response.json();
+            document.getElementById("result").value = result.result;
+            document.getElementById("saveBtn").style.display = "inline";
+        }
+
+        async function decodeMessage() {
+            const message = document.getElementById("result").value;
+            const response = await fetch("http://localhost:5056/process/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ message: message, mode: "decode" }),
+            });
+            const result = await response.json();
+            document.getElementById("result").value = result.result;
+        }
+
+        async function saveData() {
+            const encryptedData = document.getElementById("result").value;
+            await fetch("http://localhost:5056/save/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ encrypted_data: encryptedData }),
+            });
+            document.getElementById("saveBtn").style.display = "none";
+            loadData();
+        }
+
+        async function loadData() {
+            const response = await fetch("http://localhost:5056/data/");
+            const data = await response.json();
+            const dataList = document.getElementById("dataList");
+            dataList.innerHTML = "";
+            data.data.forEach(item => {
+                const li = document.createElement("li");
+                li.textContent = `ID: ${item[0]}, Encrypted Data: ${item[1]}`;
+                dataList.appendChild(li);
+            });
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
